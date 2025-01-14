@@ -2,6 +2,6 @@
 *.o
 
 # Ignore .o files in the obj/ directory
-src/*.obj
+src/*.o
 
 chess
