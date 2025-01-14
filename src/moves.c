@@ -75,17 +75,33 @@ int isValidMove(int x1, int y1, int x2, int y2) {
     // Check if the source and destination are within bounds
     if (x1 < 0 || x1 >= SIZE || y1 < 0 || y1 >= SIZE ||
         x2 < 0 || x2 >= SIZE || y2 < 0 || y2 >= SIZE) {
+        printf("Out of bounds move\n");
         return 0;
     }
 
     // Check if the source is not empty
     if (board[x1][y1] == EMPTY) {
+        printf("No piece at starting position\n");
         return 0;
+    }
+
+    // Check if the correct player is moving their piece
+    if (currentPlayer == 0) { // White's turn
+        if (isupper(board[x1][y1])) {
+            printf("White must move lowercase pieces\n");
+            return 0;
+        }
+    } else { // Black's turn
+        if (!isupper(board[x1][y1])) {
+            printf("Black must move uppercase pieces\n");
+            return 0;
+        }
     }
 
     // Check if the destination contains a friendly piece
     if (board[x2][y2] != EMPTY && 
         (isupper(board[x1][y1]) == isupper(board[x2][y2]))) {
+        printf("Cannot capture your own piece\n");
         return 0;
     }
 
@@ -114,3 +130,7 @@ void makeMove(int x1, int y1, int x2, int y2) {
     board[x1][y1] = EMPTY;
 }
 
+// Switch turns
+void switchTurn() {
+    currentPlayer = 1 - currentPlayer; // Toggle between 0 (White) and 1 (Black)
+}

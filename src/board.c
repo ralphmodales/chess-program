@@ -2,6 +2,7 @@
 #include "board.h"
 
 char board[SIZE][SIZE];
+int currentPlayer = 0;
 
 void initializeBoard() {
     // the board starting position 

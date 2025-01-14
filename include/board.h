@@ -5,6 +5,7 @@
 #define EMPTY '.'
 
 extern char board[SIZE][SIZE];
+extern int currentPlayer; // 0 for white and 1 for black
 
 void initializeBoard();
 void displayBoard();

@@ -12,4 +12,7 @@ int isValidMove(int x1, int y1, int x2, int y2);
 // Function to make a move
 void makeMove(int x1, int y1, int x2, int y2);
 
+// Function for switch turns
+void switchTurn();
+
 #endif // MOVES_H 
