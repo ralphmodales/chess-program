@@ -1,0 +1,7 @@
+# Ignore all .o files
+*.o
+
+# Ignore .o files in the obj/ directory
+src/*.obj
+
+chess
