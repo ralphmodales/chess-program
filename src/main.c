@@ -17,6 +17,20 @@ int main() {
     while (1) {
         displayBoard();
         
+        // Check for checkmate
+        if (isCheckmate(currentPlayer)) {
+            printf("%s is in checkmate! %s wins!\n", 
+                   currentPlayer == 0 ? "White" : "Black",
+                   currentPlayer == 0 ? "Black" : "White");
+            break;
+        }
+        
+        // Check for stalemate
+        if (isStalemate(currentPlayer)) {
+            printf("Stalemate! The game is a draw.\n");
+            break;
+        }
+        
         // Check if the current player is in check
         if (isKingInCheck(currentPlayer)) {
             printf("Your king is in check!\n");
@@ -45,6 +59,9 @@ int main() {
         }
     }
 
+    // Display final board state
+    displayBoard();
+    printf("Game Over!\n");
+
     return 0;
 }
-

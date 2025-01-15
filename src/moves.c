@@ -146,6 +146,94 @@ int willMoveResultInCheck(int x1, int y1, int x2, int y2, int playerColor) {
     return inCheck;
 }
 
+int isSquareAttackedAfterMove(int fromX, int fromY, int toX, int toY, int x, int y, int playerColor) {
+    char tempSrc = board[fromX][fromY];
+    char tempDst = board[toX][toY];
+    
+    // Make temporary move
+    board[toX][toY] = tempSrc;
+    board[fromX][fromY] = EMPTY;
+    
+    int isAttacked = isSquareUnderAttack(x, y, playerColor);
+    
+    // Restore board
+    board[fromX][fromY] = tempSrc;
+    board[toX][toY] = tempDst;
+    
+    return isAttacked;
+}
+
+int isMovePossible(int x1, int y1, int x2, int y2) {
+    // Check if destination square would be under attack after move
+    if (toupper(board[x1][y1]) == 'K') {
+        if (isSquareAttackedAfterMove(x1, y1, x2, y2, x2, y2, currentPlayer)) {
+            return 0;
+        }
+    } else {
+        int kingX, kingY;
+        findKingPosition(currentPlayer, &kingX, &kingY);
+        if (isSquareAttackedAfterMove(x1, y1, x2, y2, kingX, kingY, currentPlayer)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int hasLegalMoves(int playerColor) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            char piece = board[i][j];
+            if (piece == EMPTY) continue;
+            
+            // Check if piece belongs to current player
+            if ((playerColor == 0 && isupper(piece)) || 
+                (playerColor == 1 && !isupper(piece))) {
+                continue;
+            }
+            
+            // Try all possible destinations
+            for (int x = 0; x < SIZE; x++) {
+                for (int y = 0; y < SIZE; y++) {
+                    // Skip if destination contains own piece
+                    if (board[x][y] != EMPTY && 
+                        (isupper(board[i][j]) == isupper(board[x][y]))) {
+                        continue;
+                    }
+                    
+                    char pieceType = toupper(piece);
+                    int moveValid = 0;
+                    
+                    switch (pieceType) {
+                        case 'P': moveValid = isPawnMoveValid(i, j, x, y); break;
+                        case 'N': moveValid = isKnightMoveValid(i, j, x, y); break;
+                        case 'R': moveValid = isRookMoveValid(i, j, x, y); break;
+                        case 'B': moveValid = isBishopMoveValid(i, j, x, y); break;
+                        case 'Q': moveValid = isQueenMoveValid(i, j, x, y); break;
+                        case 'K': moveValid = isKingMoveValid(i, j, x, y); break;
+                    }
+                    
+                    if (moveValid && isMovePossible(i, j, x, y)) {
+                        return 1;  // Found at least one legal move
+                    }
+                }
+            }
+        }
+    }
+    return 0;  // No legal moves found
+}
+
+int isCheckmate(int playerColor) {
+    if (!isKingInCheck(playerColor)) {
+        return 0;
+    }
+    return !hasLegalMoves(playerColor);
+}
+
+int isStalemate(int playerColor) {
+    return !isKingInCheck(playerColor) && !hasLegalMoves(playerColor);
+}
+
+
 int isValidMove(int x1, int y1, int x2, int y2) {
     if (x1 < 0 || x1 >= SIZE || y1 < 0 || y1 >= SIZE ||
         x2 < 0 || x2 >= SIZE || y2 < 0 || y2 >= SIZE) {

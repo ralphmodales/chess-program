@@ -6,7 +6,7 @@
 // Convert notation to moves
 void convertNotation(const char *move, int *x1, int *y1, int *x2, int *y2);
 
-// Check if a move is a valid (basic for now...)
+// Check if a move is a valid 
 int isValidMove(int x1, int y1, int x2, int y2);
 
 // Function to make a move
@@ -22,4 +22,9 @@ int willMoveResultInCheck(int x1, int y1, int x2, int y2, int playerColor);
 void findKingPosition(int playerColor, int *kingX, int *kingY);
 
 int isSquareUnderAttack(int x, int y, int attackingColor);
+
+int isMovePossible(int x1, int y1, int x2, int y2);
+int hasLegalMoves(int playerColor);
+int isCheckmate(int playerColor);
+int isStalemate(int playerColor);
 #endif // MOVES_H 
