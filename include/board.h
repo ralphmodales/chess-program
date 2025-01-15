@@ -5,10 +5,16 @@
 #define EMPTY '.'
 
 extern char board[SIZE][SIZE];
-extern int currentPlayer; // 0 for white and 1 for black
+extern int currentPlayer;  
+extern int canCastleKingside[2];
+extern int canCastleQueenside[2];
+extern int lastPawnDoubleMove[2];
+extern int lastMoveWasDoubleJump;
+extern int fiftyMoveCounter;
+extern int moveHistory[1000][4];
+extern int moveCount;
 
 void initializeBoard();
 void displayBoard();
 
 #endif // !BOARD_H
-

@@ -3,28 +3,24 @@
 
 #include "board.h"
 
-// Convert notation to moves
-void convertNotation(const char *move, int *x1, int *y1, int *x2, int *y2);
-
-// Check if a move is a valid 
+// Core move validation
 int isValidMove(int x1, int y1, int x2, int y2);
-
-// Function to make a move
 void makeMove(int x1, int y1, int x2, int y2);
-
-// Function for switch turns
+void convertNotation(const char *move, int *x1, int *y1, int *x2, int *y2);
 void switchTurn();
 
-int isKingInCheck(int playerColor); // playerColor: 0 for white, 1 for black
+// Special moves
+int isCastlingMove(int x1, int y1, int x2, int y2);
+int canCastle(int kingside, int playerColor);
+int isEnPassantMove(int x1, int y1, int x2, int y2);
+int isPawnPromotion(int x1, int y1, int x2, int y2);
 
-int willMoveResultInCheck(int x1, int y1, int x2, int y2, int playerColor);
-
-void findKingPosition(int playerColor, int *kingX, int *kingY);
-
-int isSquareUnderAttack(int x, int y, int attackingColor);
-
-int isMovePossible(int x1, int y1, int x2, int y2);
-int hasLegalMoves(int playerColor);
+// Game state checks
+int isKingInCheck(int playerColor);
 int isCheckmate(int playerColor);
 int isStalemate(int playerColor);
+int isThreefoldRepetition();
+int isFiftyMoveDraw();
+int hasInsufficientMaterial();
+
 #endif // MOVES_H 
