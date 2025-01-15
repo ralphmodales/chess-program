@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
+#include <string.h>
 #include "ai.h"
 #include "board.h"
 #include "moves.h"
@@ -68,6 +69,95 @@ const int kingTableEnd[64] = {
 #define MOBILITY_WEIGHT 0.2
 #define CENTER_CONTROL_WEIGHT 0.3
 #define DEVELOPMENT_WEIGHT 0.2
+
+// Opening book
+#define MAX_OPENING_MOVES 1000
+#define MAX_MOVE_SEQUENCE 10
+
+typedef struct {
+    char moves[MAX_MOVE_SEQUENCE][5]; // Each move is 4 characters (e.g., "e2e4") + null terminator
+    int moveCount;                    // Number of moves in this sequence
+} MoveSequence;
+
+MoveSequence openingBook[MAX_OPENING_MOVES];
+int openingBookSize = 0;
+
+char lastMoves[MAX_MOVE_SEQUENCE][5]; // Stores the last moves
+int lastMoveCount = 0;
+
+void loadOpenings() {
+    FILE *file = fopen("openings.txt", "r");
+    if (!file) {
+        perror("Failed to open opening book");
+        return;
+    }
+
+    char line[100];
+    while (fgets(line, sizeof(line), file)) {
+        if (openingBookSize >= MAX_OPENING_MOVES) break;
+
+        line[strcspn(line, "\n")] = '\0'; // Remove newline character
+
+        MoveSequence sequence;
+        sequence.moveCount = 0;
+
+        char *token = strtok(line, " ");
+        while (token != NULL && sequence.moveCount < MAX_MOVE_SEQUENCE) {
+            strncpy(sequence.moves[sequence.moveCount], token, 5);
+            sequence.moveCount++;
+            token = strtok(NULL, " ");
+        }
+
+        openingBook[openingBookSize] = sequence;
+        openingBookSize++;
+    }
+
+    fclose(file);
+}
+
+// TODO: Debug and refine opening book bug and logic for better early-game performance
+
+void recordMove(int fromX, int fromY, int toX, int toY) {
+    if (lastMoveCount >= MAX_MOVE_SEQUENCE) {
+        // Shift moves to make room for the new move
+        for (int i = 1; i < MAX_MOVE_SEQUENCE; i++) {
+            strncpy(lastMoves[i - 1], lastMoves[i], 5);
+        }
+        lastMoveCount--;
+    }
+
+    sprintf(lastMoves[lastMoveCount], "%c%d%c%d", 
+            'a' + fromY, 8 - fromX,
+            'a' + toY, 8 - toX);
+    lastMoveCount++;
+}
+
+int getOpeningMove(int *fromX, int *fromY, int *toX, int *toY) {
+    for (int i = 0; i < openingBookSize; i++) {
+        MoveSequence sequence = openingBook[i];
+
+        // Check if the sequence matches the current game state
+        bool match = true;
+        for (int j = 0; j < lastMoveCount; j++) {
+            if (strcmp(sequence.moves[j], lastMoves[j]) != 0) {
+                match = false;
+                break;
+            }
+        }
+
+        if (match && lastMoveCount < sequence.moveCount) {
+            char *move = sequence.moves[lastMoveCount];
+            *fromX = 8 - (move[1] - '0');
+            *fromY = move[0] - 'a';
+            *toX = 8 - (move[3] - '0');
+            *toY = move[2] - 'a';
+
+            return 1;
+        }
+    }
+
+    return 0; // No matching move found in the opening book
+}
 
 // Enhanced position evaluation
 int evaluatePosition() {
@@ -308,38 +398,53 @@ int pvSearch(int depth, int alpha, int beta, int maximizing) {
     return alpha;
 }
 
-// Get AI move using enhanced search
+// Get AI move
 int getAIMove(int *fromX, int *fromY, int *toX, int *toY) {
+    static int openingPhase = 1;
+
+    if (openingPhase) {
+        if (getOpeningMove(fromX, fromY, toX, toY)) {
+            if (isValidMove(*fromX, *fromY, *toX, *toY)) {
+                return 1;
+            } else {
+                openingPhase = 0; // Fall back to regular search if the move is invalid
+            }
+        } else {
+            openingPhase = 0; // No more opening moves
+        }
+    }
+
+    // Fall back to regular search if no opening move is found
     int bestScore = -INFINITY_SCORE;
     int originalPlayer = currentPlayer;
-    
+
     *fromX = -1;
     *fromY = -1;
     *toX = -1;
     *toY = -1;
-    
-    for(int i = 0; i < SIZE; i++) {
-        for(int j = 0; j < SIZE; j++) {
+
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
             char piece = board[i][j];
-            if(piece == EMPTY || 
-               (originalPlayer == 0 && isupper(piece)) ||
-               (originalPlayer == 1 && !isupper(piece))) {
+            if (piece == EMPTY || 
+                (originalPlayer == 0 && isupper(piece)) ||
+                (originalPlayer == 1 && !isupper(piece))) {
                 continue;
             }
-            
-            for(int x = 0; x < SIZE; x++) {
-                for(int y = 0; y < SIZE; y++) {
-                    if(isValidMove(i, j, x, y)) {
+
+            for (int x = 0; x < SIZE; x++) {
+                for (int y = 0; y < SIZE; y++) {
+                    if (isValidMove(i, j, x, y)) {
                         char tempDest = board[x][y];
                         board[x][y] = board[i][j];
                         board[i][j] = EMPTY;
-                        
+
                         int score = -pvSearch(MAX_DEPTH - 1, -INFINITY_SCORE, INFINITY_SCORE, false);
-                        
+
                         board[i][j] = board[x][y];
                         board[x][y] = tempDest;
-                        
-                        if(score > bestScore) {
+
+                        if (score > bestScore) {
                             bestScore = score;
                             *fromX = i;
                             *fromY = j;
@@ -351,7 +456,6 @@ int getAIMove(int *fromX, int *fromY, int *toX, int *toY) {
             }
         }
     }
-    
-    // Return 1 if a valid move was found
+
     return (*fromX != -1);
 }

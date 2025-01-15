@@ -73,6 +73,7 @@ int main() {
     char formattedMove[6];
 
     initializeBoard();
+    loadOpenings(); // Load the openings
     printf("\n=== Welcome to Chess with AI ===\n");
     printf("\nBoard notation:\n");
     printf("- Uppercase (RNBQKP) are Black pieces\n");
