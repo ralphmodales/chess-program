@@ -39,7 +39,6 @@ int isPawnMoveValid(int x1, int y1, int x2, int y2) {
         }
     } else if (abs(y2 - y1) == 1 && x2 == x1 + direction) {  // Capture
         if (board[x2][y2] != EMPTY) {
-            // Check if piece is enemy (uppercase vs lowercase)
             return (isupper(board[x1][y1]) != isupper(board[x2][y2]));
         }
     }
@@ -71,21 +70,94 @@ int isKingMoveValid(int x1, int y1, int x2, int y2) {
     return abs(x2 - x1) <= 1 && abs(y2 - y1) <= 1;
 }
 
+void findKingPosition(int playerColor, int *kingX, int *kingY) {
+    char kingPiece = playerColor == 0 ? 'k' : 'K';
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            if (board[i][j] == kingPiece) {
+                *kingX = i;
+                *kingY = j;
+                return;
+            }
+        }
+    }
+}
+
+int isSquareUnderAttack(int x, int y, int attackingColor) {
+    // Check attacks from all opponent's pieces
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            char piece = board[i][j];
+            if (piece == EMPTY) {
+                continue;
+            }
+            
+            // For white king (lowercase k), check attacks from black pieces (uppercase)
+            // For black king (uppercase K), check attacks from white pieces (lowercase)
+            if ((attackingColor == 0 && !isupper(piece)) || 
+                (attackingColor == 1 && isupper(piece))) {
+                continue;
+            }
+
+            // Store current position
+            char destPiece = board[x][y];
+            board[x][y] = EMPTY;
+                
+            // Check move validity without recursion
+            int isValid = 0;
+            char pieceType = toupper(piece);
+            switch (pieceType) {
+                case 'P': isValid = isPawnMoveValid(i, j, x, y); break;
+                case 'N': isValid = isKnightMoveValid(i, j, x, y); break;
+                case 'R': isValid = isRookMoveValid(i, j, x, y); break;
+                case 'B': isValid = isBishopMoveValid(i, j, x, y); break;
+                case 'Q': isValid = isQueenMoveValid(i, j, x, y); break;
+                case 'K': isValid = isKingMoveValid(i, j, x, y); break;
+            }
+                
+            // Restore position
+            board[x][y] = destPiece;
+                
+            if (isValid) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int isKingInCheck(int playerColor) {
+    int kingX, kingY;
+    findKingPosition(playerColor, &kingX, &kingY);
+    return isSquareUnderAttack(kingX, kingY, playerColor);
+}
+
+int willMoveResultInCheck(int x1, int y1, int x2, int y2, int playerColor) {
+    char tempDest = board[x2][y2];
+    char tempSrc = board[x1][y1];
+    board[x2][y2] = tempSrc;
+    board[x1][y1] = EMPTY;
+    
+    int inCheck = isKingInCheck(playerColor);
+    
+    board[x1][y1] = tempSrc;
+    board[x2][y2] = tempDest;
+    
+    return inCheck;
+}
+
 int isValidMove(int x1, int y1, int x2, int y2) {
-    // Check if the source and destination are within bounds
     if (x1 < 0 || x1 >= SIZE || y1 < 0 || y1 >= SIZE ||
         x2 < 0 || x2 >= SIZE || y2 < 0 || y2 >= SIZE) {
         printf("Out of bounds move\n");
         return 0;
     }
 
-    // Check if the source is not empty
     if (board[x1][y1] == EMPTY) {
         printf("No piece at starting position\n");
         return 0;
     }
 
-    // Check if the correct player is moving their piece
     if (currentPlayer == 0) { // White's turn
         if (isupper(board[x1][y1])) {
             printf("White must move lowercase pieces\n");
@@ -98,24 +170,36 @@ int isValidMove(int x1, int y1, int x2, int y2) {
         }
     }
 
-    // Check if the destination contains a friendly piece
     if (board[x2][y2] != EMPTY && 
         (isupper(board[x1][y1]) == isupper(board[x2][y2]))) {
         printf("Cannot capture your own piece\n");
         return 0;
     }
 
-    // Piece-specific validation
     char piece = toupper(board[x1][y1]);
+    int moveValid = 0;
+    
     switch (piece) {
-        case 'P': return isPawnMoveValid(x1, y1, x2, y2);
-        case 'N': return isKnightMoveValid(x1, y1, x2, y2);
-        case 'R': return isRookMoveValid(x1, y1, x2, y2);
-        case 'B': return isBishopMoveValid(x1, y1, x2, y2);
-        case 'Q': return isQueenMoveValid(x1, y1, x2, y2);
-        case 'K': return isKingMoveValid(x1, y1, x2, y2);
+        case 'P': moveValid = isPawnMoveValid(x1, y1, x2, y2); break;
+        case 'N': moveValid = isKnightMoveValid(x1, y1, x2, y2); break;
+        case 'R': moveValid = isRookMoveValid(x1, y1, x2, y2); break;
+        case 'B': moveValid = isBishopMoveValid(x1, y1, x2, y2); break;
+        case 'Q': moveValid = isQueenMoveValid(x1, y1, x2, y2); break;
+        case 'K': moveValid = isKingMoveValid(x1, y1, x2, y2); break;
         default: return 0;
     }
+    
+    if (!moveValid) {
+        printf("Invalid move for this piece\n");
+        return 0;
+    }
+    
+    if (willMoveResultInCheck(x1, y1, x2, y2, currentPlayer)) {
+        printf("This move would leave your king in check!\n");
+        return 0;
+    }
+    
+    return 1;
 }
 
 void convertNotation(const char *move, int *x1, int *y1, int *x2, int *y2) {
@@ -130,7 +214,7 @@ void makeMove(int x1, int y1, int x2, int y2) {
     board[x1][y1] = EMPTY;
 }
 
-// Switch turns
 void switchTurn() {
-    currentPlayer = 1 - currentPlayer; // Toggle between 0 (White) and 1 (Black)
+    currentPlayer = 1 - currentPlayer;
 }
+
