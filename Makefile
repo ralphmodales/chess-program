@@ -4,7 +4,7 @@ SRC_DIR = src
 INCLUDE_DIR = include
 BIN = chess
 
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/board.c $(SRC_DIR)/moves.c
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/board.c $(SRC_DIR)/moves.c $(SRC_DIR)/ai.c
 OBJS = $(SRCS:.c=.o)
 
 all: $(BIN)
