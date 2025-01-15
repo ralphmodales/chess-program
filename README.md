@@ -6,3 +6,6 @@ This is a simple chess program written in C. The goal is to build a console-base
 1. Clone the repository.
 2. Run `make` to compile the program.
 3. Run `./chess` to start the game.
+
+## Future Plans
+After completing the current version in C, the program will be rewritten in Zig for better performance and more modern features.
