@@ -15,6 +15,7 @@ int getAIMove(int *fromX, int *fromY, int *toX, int *toY);
 int evaluatePosition(void);
 int minimax(int depth, int alpha, int beta, int maximizing);
 void recordMove(int fromX, int fromY, int toX, int toY);
+int getMoveCount(); 
 void loadOpenings(void);
 
 #endif

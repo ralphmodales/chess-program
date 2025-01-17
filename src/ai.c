@@ -10,36 +10,36 @@
 
 // Piece-Square tables for sophisticated position evaluation
 const int pawnTable[64] = {
-     0,  0,  0,   0,   0,  0,  0,  0,
-    50, 50, 50,  50,  50, 50, 50, 50,
-    10, 10, 20,  30,  30, 20, 10, 10,
-     5,  5, 10,  25,  25, 10,  5,  5,
-     0,  0,  0,  20,  20,  0,  0,  0,
-     5, -5,-10,   0,   0,-10, -5,  5,
-     5, 10, 10, -20, -20, 10, 10,  5,
-     0,  0,  0,   0,   0,  0,  0,  0
+    0,   0,   0,   0,   0,   0,   0,   0,
+    70,  70,  70,  80,  80,  70,  70,  70,  // Increased central pawn advancement value
+    30,  30,  40,  50,  50,  40,  30,  30,  // Better rewards for controlling center
+    10,  10,  20,  35,  35,  20,  10,  10,  
+    5,   5,   10,  25,  25,  10,  5,   5,
+    0,   0,   0,   5,   5,   0,   0,   0,
+    0,   0,   0,  -5,  -5,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0
 };
 
 const int knightTable[64] = {
-    -50,-40,-30,-30,-30,-30,-40,-50,
-    -40,-20,  0,  0,  0,  0,-20,-40,
-    -30,  0, 10, 15, 15, 10,  0,-30,
-    -30,  5, 15, 20, 20, 15,  5,-30,
-    -30,  0, 15, 20, 20, 15,  0,-30,
-    -30,  5, 10, 15, 15, 10,  5,-30,
-    -40,-20,  0,  5,  5,  0,-20,-40,
-    -50,-40,-30,-30,-30,-30,-40,-50
+    -50, -40, -30, -30, -30, -30, -40, -50,
+    -40, -20,   0,   5,   5,   0, -20, -40,
+    -30,   5,  15,  15,  15,  15,   5, -30,  // Slightly reduced central square values
+    -30,   0,  15,  20,  20,  15,   0, -30,
+    -30,   0,  10,  15,  15,  10,   0, -30,
+    -30,   0,   5,  10,  10,   5,   0, -30,
+    -40, -20,   0,   0,   0,   0, -20, -40,
+    -50, -40, -30, -30, -30, -30, -40, -50
 };
 
 const int bishopTable[64] = {
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -10,  0,  5, 10, 10,  5,  0,-10,
-    -10,  5,  5, 10, 10,  5,  5,-10,
-    -10,  0, 10, 10, 10, 10,  0,-10,
-    -10, 10, 10, 10, 10, 10, 10,-10,
-    -10,  5,  0,  0,  0,  0,  5,-10,
-    -20,-10,-10,-10,-10,-10,-10,-20
+    -20, -10, -10, -10, -10, -10, -10, -20,
+    -10,   5,   0,   0,   0,   0,   5, -10,
+    -10,  10,  10,  10,  10,  10,  10, -10,  // Increased diagonal movement values
+    -10,   0,  10,  15,  15,  10,   0, -10,
+    -10,   5,   5,  10,  10,   5,   5, -10,
+    -10,   0,   5,  10,  10,   5,   0, -10,
+    -10,   0,   0,   0,   0,   0,   0, -10,
+    -20, -10, -10, -10, -10, -10, -10, -20
 };
 
 const int kingTableMiddle[64] = {
@@ -65,11 +65,11 @@ const int kingTableEnd[64] = {
 };
 
 // Evaluation weights
-#define PAWN_STRUCTURE_WEIGHT 0.3
-#define KING_SAFETY_WEIGHT 0.4
-#define MOBILITY_WEIGHT 0.2
-#define CENTER_CONTROL_WEIGHT 0.3
-#define DEVELOPMENT_WEIGHT 0.2
+#define PAWN_STRUCTURE_WEIGHT 0.4   
+#define KING_SAFETY_WEIGHT 0.3      
+#define MOBILITY_WEIGHT 0.3         
+#define CENTER_CONTROL_WEIGHT 0.5   
+#define DEVELOPMENT_WEIGHT 0.4
 
 // Opening book
 #define MAX_OPENING_MOVES 1000
@@ -138,6 +138,10 @@ void recordMove(int fromX, int fromY, int toX, int toY) {
     lastMoveCount++;
 }
 
+int getMoveCount() {
+    return lastMoveCount;
+}
+
 int getOpeningMove(int *fromX, int *fromY, int *toX, int *toY) {
     // Return 0 if we're out of book moves
     if (lastMoveCount >= MAX_MOVE_SEQUENCE) return 0;
@@ -184,6 +188,34 @@ int getOpeningMove(int *fromX, int *fromY, int *toX, int *toY) {
     return 0;
 }
 
+int getEarlyGameDevelopmentBonus(char piece, int x, int y, int moveCount) {
+    if (moveCount > 10) return 0;  // Only apply in first 10 moves
+    
+    int bonus = 0;
+    switch(toupper(piece)) {
+        case 'P':
+            // Bonus for central pawns moving forward
+            if ((y == 3 || y == 4) && (x == 3 || x == 4)) {
+                bonus += 25;
+            }
+            break;
+        case 'N':
+        case 'B':
+            // Development bonus for minor pieces
+            if (x != 0 && x != 7) {  // If piece has moved from back rank
+                bonus += 20;
+            }
+            break;
+        case 'Q':
+            // Small penalty for early queen development
+            if (x != 0 && x != 7) {
+                bonus -= 10;
+            }
+            break;
+    }
+    return bonus;
+}
+
 // Enhanced position evaluation
 int evaluatePosition() {
     int score = 0;
@@ -193,6 +225,9 @@ int evaluatePosition() {
     int kingSafetyScore = 0;
     int centerControlScore = 0;
     int developmentScore = 0;
+    
+    // Get move count for development evaluation
+    int moveCount = getMoveCount();  
     
     // Count material and get basic positioning
     for(int i = 0; i < SIZE; i++) {
@@ -239,8 +274,19 @@ int evaluatePosition() {
                     break;
             }
             
-            score += isWhite ? pieceValue : -pieceValue;
-            
+            developmentScore += getEarlyGameDevelopmentBonus(piece, i, j, moveCount);
+            score += isWhite ? pieceValue : -pieceValue; 
+
+            if (moveCount <= 10) {  // Early game focus on center
+              int centralPawns = 0;
+              for (int i = 2; i <= 5; i++) {
+                for (int j = 2; j <= 5; j++) {
+                  if (board[i][j] == 'P') centralPawns++;
+                  if (board[i][j] == 'p') centralPawns--;
+                }
+            }
+            centerControlScore += centralPawns * 15;
+          }
             // Pawn structure evaluation
             if(toupper(piece) == 'P') {
                 // Doubled pawns penalty
