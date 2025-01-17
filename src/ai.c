@@ -10,7 +10,7 @@
 
 // Move history to track repetition
 #define MOVE_HISTORY_SIZE 5
-char moveHistory[MOVE_HISTORY_SIZE][5];
+char moveHistories[MOVE_HISTORY_SIZE][5];
 int moveHistoryCount = 0;
 
 // Penalty for repeating moves
@@ -79,7 +79,7 @@ void recordMove(int fromX, int fromY, int toX, int toY) {
     // Update move history
     if (moveHistoryCount >= MOVE_HISTORY_SIZE) {
         for (int i = 1; i < MOVE_HISTORY_SIZE; i++) {
-            strncpy(moveHistory[i - 1], moveHistory[i], 5);
+            strncpy(moveHistories[i - 1], moveHistories[i], 5);
         }
         moveHistoryCount--;
     }
@@ -89,8 +89,8 @@ void recordMove(int fromX, int fromY, int toX, int toY) {
              'a' + fromY, 8 - fromX,
              'a' + toY, 8 - toX);
     
-    strncpy(moveHistory[moveHistoryCount], move, 5);
-    moveHistory[moveHistoryCount][4] = '\0';
+    strncpy(moveHistories[moveHistoryCount], move, 5);
+    moveHistories[moveHistoryCount][4] = '\0';
     moveHistoryCount++;
 
     // Update last moves for opening book
@@ -221,7 +221,7 @@ int evaluatePosition() {
     // Check for move repetition
     if (moveHistoryCount >= 2) {
         for (int i = 0; i < moveHistoryCount - 1; i++) {
-            if (strcmp(moveHistory[i], moveHistory[moveHistoryCount - 1]) == 0) {
+            if (strcmp(moveHistories[i], moveHistories[moveHistoryCount - 1]) == 0) {
                 score -= REPETITION_PENALTY;
                 break;
             }
