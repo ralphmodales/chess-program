@@ -11,11 +11,18 @@
 #define ROOK_VALUE 500
 #define QUEEN_VALUE 900
 
+// Evaluation bonuses
+#define CONNECTED_ROOKS_BONUS 30  
+
 int getAIMove(int *fromX, int *fromY, int *toX, int *toY);
 int evaluatePosition(void);
 int minimax(int depth, int alpha, int beta, int maximizing);
 void recordMove(int fromX, int fromY, int toX, int toY);
 int getMoveCount(); 
+int evaluateKingSafety();
+int evaluatePieceCoordination();
+int evaluateConnectedRooks();  
+int evaluatePawnStructure();   
 void loadOpenings(void);
 
 #endif
