@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <time.h>
 #include "board.h"
 #include "moves.h"
 #include "ai.h"
@@ -72,6 +73,8 @@ int main() {
     int moveNumber = 1;
     char formattedMove[6];
 
+    srand(time(NULL));
+
     initializeBoard();
     loadOpenings(); // Load the openings
     printf("\n=== Welcome to Chess with AI ===\n");
@@ -140,6 +143,7 @@ int main() {
                 if (isValidMove(x1, y1, x2, y2)) {
                     printMoveHistory(moveNumber, move, 0);
                     makeMove(x1, y1, x2, y2);
+                    recordMove(x1, y1, x2, y2);
                     switchTurn();
                     if (currentPlayer == 1) moveNumber++; // Increment after Black's move
                     break;
@@ -155,6 +159,7 @@ int main() {
                 formatMove(fromX, fromY, toX, toY, formattedMove);
                 printMoveHistory(moveNumber, formattedMove, 1);
                 makeMove(fromX, fromY, toX, toY);
+                recordMove(fromX, fromY, toX, toY);
                 switchTurn();
                 if (currentPlayer == 1) moveNumber++; // Increment after Black's move
             } else {

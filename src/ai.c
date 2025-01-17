@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
@@ -115,8 +116,6 @@ void loadOpenings() {
     fclose(file);
 }
 
-// TODO: Debug and refine opening book bug and logic for better early-game performance
-
 void recordMove(int fromX, int fromY, int toX, int toY) {
     if (lastMoveCount >= MAX_MOVE_SEQUENCE) {
         // Shift moves to make room for the new move
@@ -126,37 +125,63 @@ void recordMove(int fromX, int fromY, int toX, int toY) {
         lastMoveCount--;
     }
 
-    sprintf(lastMoves[lastMoveCount], "%c%d%c%d", 
-            'a' + fromY, 8 - fromX,
-            'a' + toY, 8 - toX);
+    // Convert board coordinates to algebraic notation
+    // Use snprintf to prevent buffer overflow and ensure null termination
+    char move[25];  // Increased buffer size to 25 bytes
+    snprintf(move, sizeof(move), "%c%d%c%d", 
+             'a' + fromY, 8 - fromX,
+             'a' + toY, 8 - toX);
+    
+    // Use strncpy to safely copy the move
+    strncpy(lastMoves[lastMoveCount], move, 5);
+    lastMoves[lastMoveCount][4] = '\0';  // Ensure null termination
     lastMoveCount++;
 }
 
 int getOpeningMove(int *fromX, int *fromY, int *toX, int *toY) {
+    // Return 0 if we're out of book moves
+    if (lastMoveCount >= MAX_MOVE_SEQUENCE) return 0;
+    
+    // Find all matching sequences up to current position
+    int matchingSequences[MAX_OPENING_MOVES];
+    int matchCount = 0;
+    
     for (int i = 0; i < openingBookSize; i++) {
-        MoveSequence sequence = openingBook[i];
-
-        // Check if the sequence matches the current game state
-        bool match = true;
+        bool matches = true;
+        // Check if this sequence matches our game so far
         for (int j = 0; j < lastMoveCount; j++) {
-            if (strcmp(sequence.moves[j], lastMoves[j]) != 0) {
-                match = false;
+            if (j >= openingBook[i].moveCount || 
+                strcmp(lastMoves[j], openingBook[i].moves[j]) != 0) {
+                matches = false;
                 break;
             }
         }
-
-        if (match && lastMoveCount < sequence.moveCount) {
-            char *move = sequence.moves[lastMoveCount];
-            *fromX = 8 - (move[1] - '0');
-            *fromY = move[0] - 'a';
-            *toX = 8 - (move[3] - '0');
-            *toY = move[2] - 'a';
-
+        
+        // If we found a match and it has more moves
+        if (matches && openingBook[i].moveCount > lastMoveCount) {
+            matchingSequences[matchCount++] = i;
+        }
+    }
+    
+    // If we found matching sequences, randomly choose one
+    if (matchCount > 0) {
+        int chosen = rand() % matchCount;
+        int seqIndex = matchingSequences[chosen];
+        char *nextMove = openingBook[seqIndex].moves[lastMoveCount];
+        
+        // Convert algebraic notation back to board coordinates
+        *fromY = nextMove[0] - 'a';
+        *fromX = '8' - nextMove[1];
+        *toY = nextMove[2] - 'a';
+        *toX = '8' - nextMove[3];
+        
+        // Verify move is legal before returning
+        if (isValidMove(*fromX, *fromY, *toX, *toY)) {
             return 1;
         }
     }
-
-    return 0; // No matching move found in the opening book
+    
+    return 0;
 }
 
 // Enhanced position evaluation
