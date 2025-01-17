@@ -305,20 +305,21 @@ void makeMove(int x1, int y1, int x2, int y2) {
     moveHistory[moveCount][3] = y2;
     moveCount++;
     
-    // Handle special moves
+    // Check for special moves BEFORE making the move
     if (isCastlingMove(x1, y1, x2, y2)) {
         performCastling(x1, y1, x2, y2);
     } else if (isEnPassantMove(x1, y1, x2, y2)) {
         performEnPassant(x1, y1, x2, y2);
+    } else if (isPawnPromotion(x1, y1, x2, y2)) {
+        // First move the pawn
+        board[x2][y2] = board[x1][y1];
+        board[x1][y1] = EMPTY;
+        // Then handle the promotion
+        promotePawn(x2, y2);
     } else {
         // Regular move
         board[x2][y2] = board[x1][y1];
         board[x1][y1] = EMPTY;
-    }
-    
-    // Handle pawn promotion
-    if (isPawnPromotion(x1, y1, x2, y2)) {
-        promotePawn(x2, y2);
     }
     
     // Update castling rights
